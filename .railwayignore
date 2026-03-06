@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.db
+*.pdf
+.env
+.venv
+venv/
+ENV/
+.git/
+.gitignore
+README.md
+test_setup.py
+seed_menu.py
