@@ -322,7 +322,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /start command"""
     user = update.message.from_user
     keyboard = [
-        [InlineKeyboardButton("🍽️ Lihat Menu", callback_data='show_menu')],
+        [InlineKeyboardButton("🛒 Lihat Produk", callback_data='show_menu')],
         [InlineKeyboardButton("📦 Pesanan Saya", callback_data='my_orders')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -331,77 +331,75 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     description = WARUNG_DESCRIPTION.replace('\\n', '\n')
     
     welcome_text = (
-        f"👋 Halo {user.first_name}! Selamat datang di {WARUNG_NAME} 🍜\n\n"
+        f"👋 Halo {user.first_name}! Selamat datang di {WARUNG_NAME} 🏪\n\n"
         f"📍 Alamat: {WARUNG_ADDRESS}\n\n"
         f"ℹ️ Tentang Kami:\n{description}\n\n"
-        "Silakan pilih menu di bawah:"
+        "Silakan pilih menu di bawah untuk mulai berbelanja:"
     )
     
     await update.message.reply_text(welcome_text, reply_markup=reply_markup)
 
 async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Show menu - send 3 images first, then menu options"""
+    """Show menu - display product list for toko kelontong"""
     query = update.callback_query
     await query.answer()
 
-    # Get all menu items (should be 3 sizes)
+    # Get all menu items
     menu_items = get_all_menu()
 
     if not menu_items:
         await query.edit_message_text("Maaf, menu belum tersedia.")
         return
 
-    # Delete the original message
-    try:
-        await query.message.delete()
-    except:
-        pass
-
-    # Send 3 images simultaneously as media group
-    media_group = []
-    for item in menu_items:
-        if item['foto'] and os.path.exists(item['foto']):
-            with open(item['foto'], 'rb') as photo:
-                media_group.append(InputMediaPhoto(media=photo.read()))
+    # Group products by category (simple grouping based on price range and name)
+    categories = {
+        '🍚 Sembako': [],
+        '🥫 Makanan & Minuman': [],
+        '🧼 Kebutuhan Rumah Tangga': [],
+        '🍪 Snack & Jajanan': [],
+        '🧴 Perlengkapan Mandi': []
+    }
     
-    if media_group:
-        await context.bot.send_media_group(
-            chat_id=query.message.chat_id,
-            media=media_group
-        )
-
-    # Get product name
-    if menu_items:
-        product_name = menu_items[0]['nama'].split(' - ')[0] if ' - ' in menu_items[0]['nama'] else menu_items[0]['nama']
-
-    # Build menu text with all sizes
-    menu_text = f"🍽️ MENU KAMI\n\n📦 {product_name}\n\nPilih ukuran:\n\n"
-
+    # Simple categorization based on product names
     for item in menu_items:
-        menu_text += (
-            f"🍴 {item['nama']}\n"
-            f"💰 Rp {item['harga']:,}\n"
-            f"📝 {item['deskripsi']}\n"
-            f"📦 Stok: {item['stok']}\n"
-            f"━━━━━━━━━━━━━━━━\n\n"
-        )
-
-    # Create buttons for each size
+        nama = item['nama'].lower()
+        if any(x in nama for x in ['beras', 'minyak', 'gula', 'tepung']):
+            categories['🍚 Sembako'].append(item)
+        elif any(x in nama for x in ['indomie', 'mie', 'teh', 'susu', 'kopi', 'minuman']):
+            categories['🥫 Makanan & Minuman'].append(item)
+        elif any(x in nama for x in ['sabun cuci', 'detergen', 'tissue', 'pel', 'sapu']):
+            categories['🧼 Kebutuhan Rumah Tangga'].append(item)
+        elif any(x in nama for x in ['chitato', 'biskuit', 'snack', 'keripik', 'wafer']):
+            categories['🍪 Snack & Jajanan'].append(item)
+        elif any(x in nama for x in ['sabun mandi', 'shampoo', 'pasta gigi', 'sikat']):
+            categories['🧴 Perlengkapan Mandi'].append(item)
+        else:
+            categories['🥫 Makanan & Minuman'].append(item)  # default category
+    
+    # Build menu text
+    menu_text = f"🏪 DAFTAR PRODUK {WARUNG_NAME.upper()}\n\n"
+    menu_text += "Pilih produk yang ingin dipesan:\n\n"
+    
+    # Create buttons grouped by category
     buttons = []
-    for item in menu_items:
-        size_name = item['nama'].split(' - ')[1] if ' - ' in item['nama'] else item['nama']
-        buttons.append([InlineKeyboardButton(
-            f"🛒 {size_name} - Rp {item['harga']:,}",
-            callback_data=f"pesan_{item['id']}"
-        )])
-
+    
+    for category, items in categories.items():
+        if items:  # Only show category if it has items
+            menu_text += f"{category}\n"
+            for item in items:
+                menu_text += f"  • {item['nama']} - Rp {item['harga']:,}\n"
+                buttons.append([InlineKeyboardButton(
+                    f"🛒 {item['nama']} - Rp {item['harga']:,}",
+                    callback_data=f"pesan_{item['id']}"
+                )])
+            menu_text += "\n"
+    
     # Add back button
     buttons.append([InlineKeyboardButton("🔙 Kembali", callback_data='back_to_main')])
     reply_markup = InlineKeyboardMarkup(buttons)
 
     # Send menu text with buttons
-    await context.bot.send_message(
-        chat_id=query.message.chat_id,
+    await query.edit_message_text(
         text=menu_text,
         reply_markup=reply_markup
     )
@@ -414,7 +412,7 @@ async def pesanan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not orders:
         keyboard = [[InlineKeyboardButton("🍽️ Lihat Menu", callback_data='show_menu')]]
         await update.message.reply_text(
-            "📦 Belum ada pesanan.\n\nSilakan pesan menu terlebih dahulu!",
+            "📦 Belum ada pesanan.\n\nSilakan pesan produk terlebih dahulu!",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return
@@ -457,7 +455,7 @@ async def my_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if not orders:
         await query.edit_message_text(
-            "📦 Belum ada pesanan.\n\nSilakan pesan menu terlebih dahulu!",
+            "📦 Belum ada pesanan.\n\nSilakan pesan produk terlebih dahulu!",
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton("🔙 Kembali", callback_data='back_to_main')
             ]])
@@ -503,7 +501,7 @@ async def pesanan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not orders:
         keyboard = [[InlineKeyboardButton("🍽️ Lihat Menu", callback_data='show_menu')]]
         await update.message.reply_text(
-            "📦 Belum ada pesanan.\n\nSilakan pesan menu terlebih dahulu!",
+            "📦 Belum ada pesanan.\n\nSilakan pesan produk terlebih dahulu!",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return
@@ -543,7 +541,7 @@ async def back_to_main(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     
     keyboard = [
-        [InlineKeyboardButton("🍽️ Lihat Menu", callback_data='show_menu')],
+        [InlineKeyboardButton("🛒 Lihat Produk", callback_data='show_menu')],
         [InlineKeyboardButton("📦 Pesanan Saya", callback_data='my_orders')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)

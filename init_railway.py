@@ -61,14 +61,31 @@ def init_railway_db():
                            if f.endswith(('.png', '.jpg', '.jpeg', '.avif', '.webp')) 
                            and not f.startswith('menu_collage')])
         
-        # Seed menu with 3 sizes
+        # Seed menu - Produk toko kelontong
         sample_menu = [
-            ('Seblak - Ukuran Kecil', 10000, 'Seblak kerupuk pedas porsi kecil (200gr)', 100, 
+            # Sembako
+            ('Beras Premium 5kg', 65000, 'Beras putih premium kualitas terbaik', 50, 
              os.path.join(gambar_folder, images[0]) if len(images) > 0 else None, 'tersedia'),
-            ('Seblak - Ukuran Sedang', 15000, 'Seblak kerupuk pedas porsi sedang (350gr)', 100, 
+            ('Minyak Goreng 2L', 32000, 'Minyak goreng kemasan 2 liter', 30, 
              os.path.join(gambar_folder, images[1]) if len(images) > 1 else None, 'tersedia'),
-            ('Seblak - Ukuran Besar', 20000, 'Seblak kerupuk pedas porsi besar (500gr)', 100, 
+            ('Gula Pasir 1kg', 15000, 'Gula pasir putih 1 kilogram', 40, 
              os.path.join(gambar_folder, images[2]) if len(images) > 2 else None, 'tersedia'),
+            
+            # Makanan & Minuman
+            ('Indomie Goreng (1 dus)', 85000, 'Indomie goreng isi 40 bungkus', 20, 
+             None, 'tersedia'),
+            ('Teh Botol Sosro (1 dus)', 48000, 'Teh botol sosro isi 24 botol', 15, 
+             None, 'tersedia'),
+            ('Susu UHT 1L', 18000, 'Susu UHT plain 1 liter', 25, 
+             None, 'tersedia'),
+            
+            # Kebutuhan Rumah Tangga
+            ('Sabun Cuci Piring 800ml', 12000, 'Sabun cuci piring ekonomis', 30, 
+             None, 'tersedia'),
+            ('Detergen 1kg', 15000, 'Detergen bubuk 1 kilogram', 25, 
+             None, 'tersedia'),
+            ('Tissue Gulung (12 roll)', 35000, 'Tissue gulung isi 12 roll', 20, 
+             None, 'tersedia'),
         ]
         
         for item in sample_menu:
@@ -78,9 +95,7 @@ def init_railway_db():
             """, item)
         
         print("✅ Menu berhasil ditambahkan!")
-        print("   - Seblak Ukuran Kecil: Rp 10,000")
-        print("   - Seblak Ukuran Sedang: Rp 15,000")
-        print("   - Seblak Ukuran Besar: Rp 20,000")
+        print(f"   Total: {len(sample_menu)} produk toko kelontong")
     else:
         print(f"✅ Database sudah ada dengan {menu_count} menu items")
     
